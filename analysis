@@ -1,0 +1,159 @@
+ Project Overview
+
+The goal of this project is to combine several algorithmic techniques—Strongly Connected Components (SCC), Topological Sorting, and Shortest/Longest Path computation in Directed Acyclic Graphs (DAG)—to analyze and schedule interdependent city or campus service tasks.
+The implemented program reads a directed weighted graph, identifies cyclic dependencies, condenses them into components, and then determines both optimal (shortest) and critical (longest) paths for task execution.
+
+Input Data
+
+The program uses a JSON file (data/tasks.json) as input.
+Each vertex represents a task, and edges represent dependencies with weights (e.g., time or cost).
+
+Example:
+
+{
+  "n": 8,
+  "edges": [
+    {"u": 0, "v": 1, "w": 3},
+    {"u": 1, "v": 2, "w": 2},
+    {"u": 2, "v": 3, "w": 4},
+    {"u": 3, "v": 1, "w": 1},
+    {"u": 4, "v": 5, "w": 2},
+    {"u": 5, "v": 6, "w": 5},
+    {"u": 6, "v": 7, "w": 1}
+  ],
+  "source": 4,
+  "weight_model": "edge"
+}
+
+
+This graph has both cyclic and acyclic parts.
+The subgraph {1, 2, 3} forms a cycle, while nodes {4, 5, 6, 7} form a linear chain.
+
+ Strongly Connected Components (SCC)
+
+The Tarjan’s algorithm is implemented to detect SCCs efficiently using depth-first search (DFS).
+Each vertex is assigned an index and a low-link value. When the algorithm detects a root vertex (where low[u] == id[u]), it identifies a new component.
+
+Result for the given graph:
+
+Detected 6 components:
+
+C0 = [1, 2, 3]
+
+C1 = [0]
+
+C2 = [4]
+
+C3 = [5]
+
+C4 = [6]
+
+C5 = [7]
+
+Hence, vertices 1–2–3 are mutually reachable (a cycle), while the rest are isolated.
+
+Time complexity: O(V + E)
+
+ Condensation Graph
+
+After identifying SCCs, the algorithm constructs a condensation graph, where each SCC becomes a single node.
+Edges between components are preserved only if they connect different SCCs.
+
+This produces a Directed Acyclic Graph (DAG) that represents high-level dependencies between task groups.
+
+For the example above, the condensation DAG is:
+
+C1 → C0
+C2 → C3 → C4 → C5
+
+ Topological Sorting
+
+To determine the valid order of task execution, Kahn’s algorithm is applied to the condensation DAG.
+It repeatedly selects vertices with zero incoming edges, adds them to the order, and removes them from the graph.
+
+One valid topological order:
+
+[C2, C3, C4, C5, C1, C0]
+
+
+This order ensures that each dependency is satisfied before its successor task begins.
+
+Time complexity: O(V + E)
+
+Shortest and Longest Paths in DAG
+
+Since the condensation graph is acyclic, shortest and longest paths can be computed efficiently using dynamic programming over topological order.
+
+ Shortest Path (Single Source)
+
+Algorithm:
+
+for u in topo_order:
+    for each (u → v, weight w):
+        if dist[u] + w < dist[v]:
+            dist[v] = dist[u] + w
+
+
+Results (source = 4):
+
+Vertex	Distance
+4	0
+5	2
+6	7
+7	8
+0,1,2,3	∞ (unreachable)
+
+Shortest path: 4 → 5 → 6 → 7, total weight = 8.
+
+ Longest Path (Critical Path)
+
+The longest (critical) path is found similarly, but using the max operation instead of min:
+
+if dist[u] + w > dist[v]:
+    dist[v] = dist[u] + w
+
+
+Result:
+Critical path: 4 → 5 → 6 → 7, length = 8.
+
+This chain represents the longest dependency sequence, determining the total completion time.
+
+ Algorithmic Efficiency
+Step	Algorithm	Time Complexity	Description
+SCC Detection	Tarjan	O(V + E)	Each vertex and edge visited once
+Condensation	DAG Construction	O(E)	Processes all edges
+Topological Sort	Kahn	O(V + E)	Linear-time ordering
+Shortest/Longest Paths	DP on DAG	O(V + E)	One pass over topo order
+
+The entire pipeline runs in linear time (O(V + E)), making it efficient for large graphs.
+
+ Interpretation of Results
+
+The algorithm correctly identifies cyclic dependencies (SCCs) and separates them.
+
+The condensation graph removes cycles, enabling proper task scheduling.
+
+The topological order determines a valid execution sequence.
+
+The shortest-path computation identifies minimal execution cost or time.
+
+The longest-path (critical path) highlights dependencies that dictate the total completion time.
+
+For the given dataset, the results are logically consistent:
+
+One major SCC detected (1–2–3).
+
+Shortest and longest paths both found correctly with total weight 8.
+
+ Conclusions
+
+The implemented algorithms (Tarjan, Kahn, and DAG DP) work correctly and efficiently.
+
+The linear complexity ensures scalability for large real-world scheduling tasks.
+
+The condensation approach simplifies complex cyclic graphs into acyclic structures, making optimization feasible.
+
+The system can be applied to practical use cases such as smart city maintenance planning, workflow scheduling, or network analysis.
+
+Final conclusion:
+The project successfully demonstrates the integration of three fundamental graph algorithms into a unified, efficient system for analyzing and optimizing task dependencies.
